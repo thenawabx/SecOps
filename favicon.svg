@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>NawabHunter</title>
+  <rect width="64" height="64" rx="16" fill="#111111"/>
+  <path d="M32 8 51 15v14c0 13-7.5 22.2-19 27C20.5 51.2 13 42 13 29V15z" fill="#ffffff"/>
+  <path d="M22 43V21h5l10 13V21h5v22h-5L27 30v13z" fill="#111111"/>
+</svg>

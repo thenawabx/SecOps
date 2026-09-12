@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <title>thenawabx - Ultimate Security Operations Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="top-nav">
+        <div></div>
+        <div class="nav-actions">
+            <button class="btn-sm" onclick="exportJSON()">💾 Save JSON</button>
+            <button class="btn-sm" onclick="importJSON()">📄 Resume JSON</button>
+            <button class="btn-sm" onclick="exportPDF()">🖨️ PDF</button>
+            <button class="btn-sm" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </div>
+
+    <div class="brand-header">
+        <div class="logo">
+            <span class="logo-icon">N</span> thenawabx
+        </div>
+        <div class="subtitle">Ultimate Advanced Web Security Playbook & Operations Dashboard</div>
+        
+        <div class="filter-section">
+            <div class="filter-group">
+                <div class="page-selector-header">
+                    <label class="filter-label" for="pageSelect">Step 1 — Select Page</label>
+                    <div class="page-tool-actions" aria-label="Security tools">
+                        <button class="btn-sm dorking-trigger" type="button" onclick="openDorkingModal()"><span aria-hidden="true">/</span> Google Dorking</button>
+                        <div class="scanner-tool-stack">
+                            <button class="btn-sm more-payloads-button" type="button" onclick="openPayloadCollection()">More Payloads</button>
+                            <button class="btn-sm scanner-trigger" type="button" onclick="openScannerModal()"><span aria-hidden="true">&gt;</span> Auto Scanner</button>
+                        </div>
+                    </div>
+                </div>
+                <select id="pageSelect" class="select-filter" onchange="onPageChange()">
+                    <option value="all-pages">📁 Choose a page...</option>
+                </select>
+
+                <div class="control-grid">
+                    <input id="searchInput" class="text-filter" type="search" list="searchSuggestions" autocomplete="off" placeholder="Search test cases, endpoints, payloads..." oninput="refreshView()">
+                    <datalist id="searchSuggestions"></datalist>
+                    <div class="status-control">
+                        <select id="statusFilter" class="select-filter" onchange="refreshView()">
+                            <option value="all">All statuses</option>
+                            <option value="Vulnerable">Vulnerable</option>
+                            <option value="Fixed">Fixed</option>
+                            <option value="Not tested">Not tested</option>
+                        </select>
+                    </div>
+                    <div class="control-actions">
+                        <div class="location-selection-actions">
+                            <button class="btn-sm" id="btnSelectAll" onclick="selectAllLocations()" title="Select all locations">Select all</button>
+                            <button class="btn-sm" id="btnClearLocs" onclick="clearLocations()" title="Clear all selections">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="locations-header">
+                    <label class="filter-label" style="margin:0;">Step 2 — Select Location(s) on that page</label>
+                </div>
+
+                <div id="locationContainer" class="locations-list" aria-live="polite" style="min-height:40px;">
+                    <div style="color:var(--text-sub); font-size:0.9rem;">Select a page first to see locations.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-wrapper">
+            <div class="progress-info">
+                <span id="progressText">Total Progress: 0% Completed</span>
+                <span id="progressCount">0/0</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace-panel">
+        <div class="filter-label">Target and Project</div>
+        <div class="workspace-grid">
+            <input id="targetInput" class="text-filter" placeholder="Target domain or application" oninput="saveWorkspace()">
+            <input id="projectInput" class="text-filter" placeholder="Project name or assessment ID" oninput="saveWorkspace()">
+        </div>
+        <textarea id="projectNotes" class="notepad-field" placeholder="Target note, scope, authorization and exclusions..." oninput="saveWorkspace()"></textarea>
+    </div>
+
+    <div class="summary-panel">
+        <div class="filter-label">Finding Summary</div>
+        <div id="summaryGrid" class="summary-grid"></div>
+    </div>
+
+    <div class="categories" id="categoryContainer"></div>
+
+    <div class="section-header">
+        <div>
+            <div class="section-title" id="activeCategoryTitle">All Vulnerabilities</div>
+            <div class="section-progress" id="catProgressText">Category Progress: 0%</div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div id="resultsInfo" style="font-weight:700; color:var(--text-sub)"></div>
+            <button class="btn-sm" onclick="toggleCompleteCategory()">✓ Toggle Category Complete</button>
+        </div>
+    </div>
+
+    <div id="cardContainer"></div>
+
+    <div class="footer-action">
+        <button class="btn-danger" onclick="resetAllProgress()">🗑️ Reset All Progress</button>
+    </div>
+</div>
+
+<div id="screenshotModal" class="screenshot-modal" onclick="closeScreenshot(event)">
+    <img id="screenshotModalImage" alt="Expanded finding screenshot">
+</div>
+
+<div id="payloadModal" class="payload-modal" onclick="closePayloadModal(event)">
+    <div class="payload-dialog">
+        <div class="payload-dialog-header">
+            <div id="payloadDialogTitle" class="payload-dialog-title">Payloads</div>
+            <div class="nav-actions">
+                <button class="btn-sm" type="button" onclick="addPayload()">Add Payload</button>
+                <button id="copyAllPayloadsButton" class="btn-sm" type="button" onclick="copyAllPayloads()">Copy All</button>
+                <button class="btn-sm" type="button" onclick="closePayloadModal()">Close</button>
+            </div>
+        </div>
+        <div class="payload-library-actions">
+            <button id="xssPayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('xss')">XSS</button>
+            <button id="sqlPayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('sql')">SQL</button>
+            <button id="commandPayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('command')">Command</button>
+            <button id="xxePayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('xxe')">XXE</button>
+            <button id="nosqlPayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('nosql')">NoSQL</button>
+            <button id="openRedirectPayloadButton" class="btn-sm" type="button" onclick="openPayloadCollection('openRedirect')">Open Redirect</button>
+        </div>
+        <div id="payloadList" class="payload-list"></div>
+    </div>
+</div>
+
+<div id="dorkingModal" class="payload-modal dorking-modal" onclick="closeDorkingModal(event)">
+    <div class="payload-dialog dorking-dialog">
+        <div class="payload-dialog-header">
+            <div>
+                <div class="payload-dialog-title">Google Dorking</div>
+                <div class="dorking-subtitle">Use only on domains you own or are authorized to assess.</div>
+            </div>
+            <button class="btn-sm" type="button" onclick="closeDorkingModal()">Close</button>
+        </div>
+        <div class="dorking-controls">
+            <label class="dorking-target-label" for="dorkingTarget">Target domain</label>
+            <div class="dorking-input-row">
+                <input id="dorkingTarget" class="text-filter dorking-target" type="text" placeholder="example.com" autocomplete="off" oninput="filterDorkingPresets()" onkeydown="handleDorkingEnter(event)">
+                <select id="dorkingCategory" class="select-filter dorking-category" onchange="filterDorkingPresets()">
+                    <option value="all">All categories</option>
+                </select>
+            </div>
+            <div class="dorking-helper">Enter a hostname only. Protocols and paths are removed automatically.</div>
+        </div>
+        <div id="dorkingList" class="dorking-list"></div>
+    </div>
+</div>
+
+<div id="scannerModal" class="payload-modal scanner-modal" onclick="closeScannerModal(event)">
+    <div class="payload-dialog scanner-dialog">
+        <div class="payload-dialog-header">
+            <div>
+                <div class="payload-dialog-title">NawabHunter Ultimate</div>
+                <div class="scanner-subtitle">Authorized reconnaissance workflow and local setup</div>
+            </div>
+            <button class="btn-sm" type="button" onclick="closeScannerModal()">Close</button>
+        </div>
+
+        <div class="scanner-warning">Use this scanner only against assets you own or have written permission to assess.</div>
+
+        <div class="scanner-grid">
+            <section class="scanner-section">
+                <div class="scanner-section-title">Project files</div>
+                <p class="scanner-copy">Download the complete scanner bundle. It includes the runner, requirements, README, and all custom Nuclei templates.</p>
+                <div class="scanner-downloads">
+                    <a class="btn-sm scanner-download scanner-download-primary" href="downloads/NawabHunter-Ultimate-main.zip" download>Download complete scanner (.zip)</a>
+                </div>
+                <div class="scanner-template-list">
+                    <span class="scanner-template-label">14 templates included in the ZIP</span>
+                </div>
+            </section>
+
+            <section class="scanner-section">
+                <div class="scanner-section-title">README</div>
+                <p class="scanner-copy">The complete usage guide is shown below. The same README is included inside the downloaded ZIP.</p>
+            </section>
+        </div>
+
+        <section class="scanner-readme-panel">
+            <div class="scanner-readme-content">
+                <div class="scanner-readme-title"># NawabHunter-Ultimate</div>
+                <p>NOTE: Automation recon script for authorized testing only.</p>
+                <div class="scanner-readme-title">## Disclaimer</div>
+                <p>Use this tool only on assets you own or have written permission to assess.</p>
+                <div class="scanner-readme-title">## Download and setup</div>
+                <p>1. Click "Download complete scanner (.zip)" above and save `NawabHunter-Ultimate-main.zip` in Downloads.</p>
+                <p>2. Open a Kali or NetHunter terminal and extract the project:</p>
+                <div class="scanner-readme-command"><code>cd ~/Downloads</code><button class="btn-copy scanner-copy-button" type="button" data-command="cd ~/Downloads" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <div class="scanner-readme-command"><code>unzip NawabHunter-Ultimate-main.zip</code><button class="btn-copy scanner-copy-button" type="button" data-command="unzip NawabHunter-Ultimate-main.zip" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <div class="scanner-readme-command"><code>cd NawabHunter-Ultimate-main</code><button class="btn-copy scanner-copy-button" type="button" data-command="cd NawabHunter-Ultimate-main" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <p>3. Install the required Python packages:</p>
+                <div class="scanner-readme-command"><code>python3 -m pip install -r requirements.txt</code><button class="btn-copy scanner-copy-button" type="button" data-command="python3 -m pip install -r requirements.txt" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <p>4. Install the required reconnaissance tools listed in the bundled README. The scanner uses Go, Nmap, httpx-toolkit, Assetfinder, Katana, Nuclei, Subfinder, DNSx, Waybackurls, and Mantra.</p>
+                <p class="scanner-command-note">Copy and run this one-liner in order. The <code>-y</code> flag is used only for apt commands because Go and shell commands do not support it.</p>
+                <div class="scanner-readme-command"><code>sudo apt update --fix-missing -y &amp;&amp; sudo apt install -y golang python3 git python3-pip curl pv jq traceroute nmap httpx-toolkit assetfinder &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/katana/cmd/katana@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest &amp;&amp; GOSUMDB=off go install github.com/tomnomnom/waybackurls@latest &amp;&amp; GOSUMDB=off go install github.com/brosck/mantra@latest &amp;&amp; printf '\nexport PATH="$PATH:$HOME/go/bin"\n' &gt;&gt; ~/.bashrc &amp;&amp; printf '\nexport PATH="$PATH:$HOME/go/bin"\n' &gt;&gt; ~/.zshrc &amp;&amp; export PATH="$PATH:$HOME/go/bin"</code><button class="btn-copy scanner-copy-button" type="button" data-command="sudo apt update --fix-missing -y &amp;&amp; sudo apt install -y golang python3 git python3-pip curl pv jq traceroute nmap httpx-toolkit assetfinder &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/katana/cmd/katana@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest &amp;&amp; GOSUMDB=off go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest &amp;&amp; GOSUMDB=off go install github.com/tomnomnom/waybackurls@latest &amp;&amp; GOSUMDB=off go install github.com/brosck/mantra@latest &amp;&amp; printf '\nexport PATH=\"$PATH:$HOME/go/bin\"\n' &gt;&gt; ~/.bashrc &amp;&amp; printf '\nexport PATH=\"$PATH:$HOME/go/bin\"\n' &gt;&gt; ~/.zshrc &amp;&amp; export PATH=\"$PATH:$HOME/go/bin\"" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <p>5. Start the scanner:</p>
+                <div class="scanner-readme-command"><code>chmod +x scanner.py</code><button class="btn-copy scanner-copy-button" type="button" data-command="chmod +x scanner.py" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <div class="scanner-readme-command"><code>python3 scanner.py</code><button class="btn-copy scanner-copy-button" type="button" data-command="python3 scanner.py" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <p>6. Follow the terminal prompts. Choose wildcard or domain mode, choose the tool set, and enter only an authorized target.</p>
+                <div class="scanner-readme-title">## Optional shortcut</div>
+                <div class="scanner-readme-command"><code>source ~/.bashrc</code><button class="btn-copy scanner-copy-button" type="button" data-command="source ~/.bashrc" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <div class="scanner-readme-command"><code>runawab</code><button class="btn-copy scanner-copy-button" type="button" data-command="runawab" onclick="copyReadmeCommand(this)">Copy command</button></div>
+                <div class="scanner-readme-title">## Results</div>
+                <p>Wildcard scans use one recon_wildcard_example_com folder. Subdomain artifacts are stored together with a combined Vulnerability_Report.txt. Single-domain scans are stored in recon_single_targets.</p>
+                <div class="scanner-readme-title">## Features</div>
+                <p>- Raw tool output and progress display.<br>- Ctrl+C skips the current step; a quick second press exits.<br>- Custom Nuclei templates are included in Nuclei_Templates.<br>- Scanner templates are loaded relative to scanner.py.</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
